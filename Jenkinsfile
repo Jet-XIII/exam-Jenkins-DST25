@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/ton_user/Jenkins_devops_exams.git', branch: 'main'
+                git url: 'https://github.com/Jet-XIII/exam-Jenkins-DST25.git', branch: 'main'
             }
         }
 
