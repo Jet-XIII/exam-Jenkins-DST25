@@ -5,13 +5,15 @@ pipeline {
         DOCKERHUB_CREDENTIALS = 'dockerhub-creds-jet' 
         DOCKERHUB_USER = 'jet13'
         REGISTRY = "docker.io"
+        KUBECONFIG = credentials('config') // Récupère le kubeconfig depuis les credentials Jenkins
     }
 
     stages {
+
         stage('Checkout') {
             steps {
-		deleteDir() // Nettoie le workspace
-                git url: 'https://github.com/Jet-XIII/exam-Jenkins-DST25.git', branch: 'master'
+                deleteDir() // Nettoie le workspace
+                git url: 'https://github.com/Jet-XIII/exam-Jenkins-DST25.git', branch: "${env.BRANCH_NAME}"
             }
         }
 
@@ -36,7 +38,11 @@ pipeline {
 
         stage('Push Docker Images') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKERHUB_CREDENTIALS}",
+                    usernameVariable: 'USERNAME',
+                    passwordVariable: 'PASSWORD'
+                )]) {
                     script {
                         sh '''
                             echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin
@@ -45,6 +51,12 @@ pipeline {
                         docker.image("${DOCKERHUB_USER}/movie-service").push("latest")
                     }
                 }
+            }
+        }
+
+        stage('Test K8s Access') {
+            steps {
+                sh 'kubectl get ns'
             }
         }
 
