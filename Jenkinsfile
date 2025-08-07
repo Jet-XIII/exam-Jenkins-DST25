@@ -35,8 +35,11 @@ pipeline {
 
         stage('Push Docker Images') {
             steps {
-                script {
-                    docker.withRegistry("https://${REGISTRY}", DOCKERHUB_CREDENTIALS) {
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    script {
+                        sh '''
+                            echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin
+                        '''
                         docker.image("${DOCKERHUB_USER}/cast-service").push("latest")
                         docker.image("${DOCKERHUB_USER}/movie-service").push("latest")
                     }
