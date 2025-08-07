@@ -10,6 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+		deleteDir() // Nettoie le workspace
                 git url: 'https://github.com/Jet-XIII/exam-Jenkins-DST25.git', branch: 'main'
             }
         }
