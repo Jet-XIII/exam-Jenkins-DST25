@@ -36,3 +36,13 @@ movieService:
   databaseUri: "postgresql://castuser:castpass@cast-db-postgresql/castdb"
   service:
     port: 8000
+
+postgresql:
+  enabled: true
+  auth:
+    username: castuser
+    password: castpass
+    database: castdb
+  primary:
+    persistence:
+      enabled: false  
