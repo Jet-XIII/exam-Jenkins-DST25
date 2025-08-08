@@ -11,7 +11,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                deleteDir() // Nettoie le workspace
+                deleteDir()
                 git url: 'https://github.com/Jet-XIII/exam-Jenkins-DST25.git', branch: "${env.BRANCH_NAME}"
             }
         }
@@ -56,6 +56,18 @@ pipeline {
         stage('Test K8s Access') {
             steps {
                 sh 'kubectl get ns'
+            }
+        }
+
+        // 🔽 NOUVEAU STAGE: déploiement PostgreSQL via Helm
+        stage('Helm Deploy Database') {
+            when { branch 'dev' }
+            steps {
+                sh '''
+                    helm dependency update fastapiapp
+                    helm upgrade --install fastapiapp-db fastapiapp \
+                    --namespace dev --create-namespace
+                '''
             }
         }
 
@@ -112,7 +124,6 @@ pipeline {
             }
         }
 
-        // Optional test stage
         /*
         stage('Healthcheck (Dev)') {
             when { branch 'dev' }
