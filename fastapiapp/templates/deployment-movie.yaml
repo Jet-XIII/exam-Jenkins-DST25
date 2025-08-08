@@ -24,7 +24,7 @@ spec:
           image: "{{ .Values.movieService.image.repository }}:{{ .Values.movieService.image.tag }}"
           env:
             - name: DATABASE_URI
-              value: "{{ .Values.movieService.databaseUri }}"
+              value: "{{ .Values.movieService.databaseUri | quote }}"
           ports:
             - containerPort: {{ .Values.movieService.service.port | default 8000 }}
 {{- end }}

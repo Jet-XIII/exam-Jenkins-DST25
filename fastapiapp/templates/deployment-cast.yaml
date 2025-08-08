@@ -24,7 +24,7 @@ spec:
           image: "{{ .Values.castService.image.repository }}:{{ .Values.castService.image.tag }}"
           env:
             - name: DATABASE_URI
-              value: "{{ .Values.castService.databaseUri }}"
+              value: "value: {{ .Values.castService.databaseUri | quote }}"
           ports:
             - containerPort: {{ .Values.castService.service.port | default 8000 }}
 {{- end }}
