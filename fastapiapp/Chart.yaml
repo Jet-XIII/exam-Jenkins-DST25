@@ -1,0 +1,8 @@
+apiVersion: v2
+name: fastapiapp
+description: A Helm chart for FastAPI microservices
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+
