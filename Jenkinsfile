@@ -2,16 +2,17 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-creds-jet' 
+        DOCKERHUB_CREDENTIALS = 'dockerhub-creds-jet'
         DOCKERHUB_USER = 'jet13'
         REGISTRY = "docker.io"
+        KUBECONFIG = credentials('config') // Récupère le kubeconfig depuis les credentials Jenkins
     }
 
     stages {
         stage('Checkout') {
             steps {
-		deleteDir() // Nettoie le workspace
-                git url: 'https://github.com/Jet-XIII/exam-Jenkins-DST25.git', branch: 'main'
+                deleteDir()
+                git url: 'https://github.com/Jet-XIII/exam-Jenkins-DST25.git', branch: "${env.BRANCH_NAME}"
             }
         }
 
@@ -36,7 +37,11 @@ pipeline {
 
         stage('Push Docker Images') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKERHUB_CREDENTIALS}",
+                    usernameVariable: 'USERNAME',
+                    passwordVariable: 'PASSWORD'
+                )]) {
                     script {
                         sh '''
                             echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin
@@ -48,45 +53,85 @@ pipeline {
             }
         }
 
-        stage('Helm Deploy to Dev') {
-            when {
-                branch 'dev'
-            }
+        stage('Test K8s Access') {
             steps {
-                sh 'helm upgrade --install cast-service ./charts --namespace dev --set image.repository=docker.io/${DOCKERHUB_USER}/cast-service,image.tag=latest'
-                sh 'helm upgrade --install movie-service ./charts --namespace dev --set image.repository=docker.io/${DOCKERHUB_USER}/movie-service,image.tag=latest'
+                sh 'kubectl get ns'
+            }
+        }
+
+        // ✅ Déploiement de la base PostgreSQL
+        stage('Helm Deploy to Dev') {
+            when { branch 'dev' }
+            steps {
+                sh '''
+                    export POSTGRES_PASSWORD=$(kubectl get secret --namespace dev fastapiapp-db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
+                    helm upgrade --install fastapiapp-dev ./fastapiapp --namespace dev \
+                        --set cast.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
+                        --set cast.image.tag=latest \
+                        --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
+                        --set movie.image.tag=latest \
+                        --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
+                '''
             }
         }
 
         stage('Helm Deploy to QA') {
-            when {
-                branch 'qa'
-            }
+            when { branch 'qa' }
             steps {
-                sh 'helm upgrade --install cast-service ./charts --namespace qa --set image.repository=docker.io/${DOCKERHUB_USER}/cast-service,image.tag=latest'
-                sh 'helm upgrade --install movie-service ./charts --namespace qa --set image.repository=docker.io/${DOCKERHUB_USER}/movie-service,image.tag=latest'
+                sh '''
+                    export POSTGRES_PASSWORD=$(kubectl get secret --namespace qa fastapiapp-db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
+                    helm upgrade --install fastapiapp-qa ./fastapiapp --namespace qa \
+                        --set cast.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
+                        --set cast.image.tag=latest \
+                        --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
+                        --set movie.image.tag=latest \
+                        --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
+                '''
             }
         }
 
         stage('Helm Deploy to Staging') {
-            when {
-                branch 'staging'
-            }
+            when { branch 'staging' }
             steps {
-                sh 'helm upgrade --install cast-service ./charts --namespace staging --set image.repository=docker.io/${DOCKERHUB_USER}/cast-service,image.tag=latest'
-                sh 'helm upgrade --install movie-service ./charts --namespace staging --set image.repository=docker.io/${DOCKERHUB_USER}/movie-service,image.tag=latest'
+                sh '''
+                    export POSTGRES_PASSWORD=$(kubectl get secret --namespace staging fastapiapp-db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
+                    helm upgrade --install fastapiapp-staging ./fastapiapp --namespace staging \
+                        --set cast.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
+                        --set cast.image.tag=latest \
+                        --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
+                        --set movie.image.tag=latest \
+                        --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
+                '''
             }
         }
 
         stage('Manual Approval for Production') {
-            when {
-                branch 'master'
-            }
+            when { branch 'master' }
             steps {
                 input message: "Déployer en production ?", ok: "Oui, déployer"
-                sh 'helm upgrade --install cast-service ./charts --namespace prod --set image.repository=docker.io/${DOCKERHUB_USER}/cast-service,image.tag=latest'
-                sh 'helm upgrade --install movie-service ./charts --namespace prod --set image.repository=docker.io/${DOCKERHUB_USER}/movie-service,image.tag=latest'
+                sh '''
+                    export POSTGRES_PASSWORD=$(kubectl get secret --namespace prod fastapiapp-db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
+                    helm upgrade --install fastapiapp-prod ./fastapiapp --namespace prod \
+                        --set cast.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
+                        --set cast.image.tag=latest \
+                        --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
+                        --set movie.image.tag=latest \
+                        --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
+                '''
             }
         }
+
+        /*
+        stage('Healthcheck (Dev)') {
+            when { branch 'dev' }
+            steps {
+                sh '''
+                    sleep 10
+                    kubectl run curlpod --rm -i --restart=Never --image=curlimages/curl:latest -n dev -- \
+                    curl http://fastapiapp-cast.dev.svc.cluster.local:8000/health
+                '''
+            }
+        }
+        */
     }
 }

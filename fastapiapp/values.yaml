@@ -1,0 +1,48 @@
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+service:
+  type: ClusterIP
+  port: 80
+
+replicaCount: 3
+
+ingress:
+  enabled: false
+
+serviceAccount:
+  create: true
+  name: ""
+
+castService:
+  enabled: true
+  image:
+    repository: jet13/cast-service
+    tag: latest
+  replicaCount: 3
+  databaseUri: "postgresql://castuser:castpass@fastapiapp-dev-postgresql:5432/castdb"
+  service:
+    port: 8000
+
+movieService:
+  enabled: true
+  image:
+    repository: jet13/movie-service
+    tag: latest
+  replicaCount: 3
+  databaseUri: "postgresql://castuser:castpass@fastapiapp-dev-postgresql:5432/castdb"
+  service:
+    port: 8000
+
+postgresql:
+  enabled: true
+  auth:
+    username: castuser
+    password: castpass
+    database: castdb
+  primary:
+    persistence:
+      enabled: false  

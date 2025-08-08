@@ -1,0 +1,20 @@
+{{- if .Values.movieService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fastapiapp.fullname" . }}-movie
+  labels:
+    app.kubernetes.io/name: {{ include "fastapiapp.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: movie-service
+spec:
+  type: {{ .Values.service.type | default "ClusterIP" }}
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: movie-service
+  ports:
+    - port: {{ .Values.service.port | default 80 }}
+      targetPort: {{ .Values.movieService.service.port | default 8000 }}
+      protocol: TCP
+      name: http
+{{- end }}
