@@ -24,7 +24,8 @@ spec:
           image: "{{ .Values.castService.image.repository }}:{{ .Values.castService.image.tag }}"
           env:
             - name: DATABASE_URI
-              value: "{{ .Values.castService.databaseUri }}"
+              value: >-
+                postgresql://{{ .Values.global.postgresql.auth.username }}:{{ .Values.global.postgresql.auth.password }}@fastapiapp-{{ .Values.global.env }}-postgresql:5432/{{ .Values.global.postgresql.auth.database }}
           ports:
             - containerPort: {{ .Values.castService.service.port | default 8000 }}
 {{- end }}

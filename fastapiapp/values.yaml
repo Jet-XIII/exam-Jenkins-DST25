@@ -13,6 +13,14 @@ replicaCount: 3
 ingress:
   enabled: false
 
+global:
+  env: dev  # Sera surcharg par Jenkins (dev, qa, staging, master)
+  postgresql:
+    auth:
+      username: castuser
+      password: castpass
+      database: castdb
+
 serviceAccount:
   create: true
   name: ""
@@ -23,7 +31,6 @@ castService:
     repository: jet13/cast-service
     tag: latest
   replicaCount: 3
-  databaseUri: "postgresql://castuser:castpass@fastapiapp-dev-postgresql:5432/castdb"
   service:
     port: 8000
 
@@ -33,7 +40,6 @@ movieService:
     repository: jet13/movie-service
     tag: latest
   replicaCount: 3
-  databaseUri: "postgresql://castuser:castpass@fastapiapp-dev-postgresql:5432/castdb"
   service:
     port: 8000
 
@@ -45,4 +51,4 @@ postgresql:
     database: castdb
   primary:
     persistence:
-      enabled: false  
+      enabled: false
