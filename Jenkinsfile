@@ -5,7 +5,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = 'dockerhub-creds-jet'
         DOCKERHUB_USER = 'jet13'
         REGISTRY = "docker.io"
-        KUBECONFIG = credentials('config')
+        KUBECONFIG = credentials('config') // kubeconfig est injecté comme fichier de credentials
     }
 
     stages {
@@ -55,7 +55,12 @@ pipeline {
 
         stage('Test K8s Access') {
             steps {
-                sh 'kubectl get ns'
+                sh '''
+                    echo ">>> Test Kube Access"
+                    kubectl config current-context
+                    kubectl get ns
+                    env | grep KUBECONFIG || true
+                '''
             }
         }
 
@@ -64,13 +69,16 @@ pipeline {
             steps {
                 sh '''
                     export POSTGRES_PASSWORD=$(kubectl get secret --namespace dev fastapiapp-dev-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
-                    helm upgrade --install fastapiapp-dev ./fastapiapp --namespace dev \
-                        --set cast.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
-                        --set cast.image.tag=latest \
-                        --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
-                        --set movie.image.tag=latest \
-                        --set global.env=dev \
-                        --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
+
+                    helm upgrade --install fastapiapp-dev ./fastapiapp \
+                      --namespace dev \
+                      --create-namespace \
+                      --set castService.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
+                      --set castService.image.tag=latest \
+                      --set movieService.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
+                      --set movieService.image.tag=latest \
+                      --set global.env=dev \
+                      --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
                 '''
             }
         }
@@ -80,13 +88,16 @@ pipeline {
             steps {
                 sh '''
                     export POSTGRES_PASSWORD=$(kubectl get secret --namespace qa fastapiapp-qa-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
-                    helm upgrade --install fastapiapp-qa ./fastapiapp --namespace qa \
-                        --set cast.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
-                        --set cast.image.tag=latest \
-                        --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
-                        --set movie.image.tag=latest \
-                        --set global.env=qa \
-                        --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
+
+                    helm upgrade --install fastapiapp-qa ./fastapiapp \
+                      --namespace qa \
+                      --create-namespace \
+                      --set castService.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
+                      --set castService.image.tag=latest \
+                      --set movieService.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
+                      --set movieService.image.tag=latest \
+                      --set global.env=qa \
+                      --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
                 '''
             }
         }
@@ -96,13 +107,16 @@ pipeline {
             steps {
                 sh '''
                     export POSTGRES_PASSWORD=$(kubectl get secret --namespace staging fastapiapp-staging-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
-                    helm upgrade --install fastapiapp-staging ./fastapiapp --namespace staging \
-                        --set cast.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
-                        --set cast.image.tag=latest \
-                        --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
-                        --set movie.image.tag=latest \
-                        --set global.env=staging \
-                        --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
+
+                    helm upgrade --install fastapiapp-staging ./fastapiapp \
+                      --namespace staging \
+                      --create-namespace \
+                      --set castService.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
+                      --set castService.image.tag=latest \
+                      --set movieService.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
+                      --set movieService.image.tag=latest \
+                      --set global.env=staging \
+                      --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
                 '''
             }
         }
@@ -112,14 +126,17 @@ pipeline {
             steps {
                 input message: "Déployer en production ?", ok: "Oui, déployer"
                 sh '''
-                    export POSTGRES_PASSWORD=$(kubectl get secret --namespace prod fastapiapp-master-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
-                    helm upgrade --install fastapiapp-prod ./fastapiapp --namespace prod \
-                        --set cast.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
-                        --set cast.image.tag=latest \
-                        --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
-                        --set movie.image.tag=latest \
-                        --set global.env=prod \
-                        --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
+                    export POSTGRES_PASSWORD=$(kubectl get secret --namespace prod fastapiapp-prod-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
+
+                    helm upgrade --install fastapiapp-prod ./fastapiapp \
+                      --namespace prod \
+                      --create-namespace \
+                      --set castService.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
+                      --set castService.image.tag=latest \
+                      --set movieService.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
+                      --set movieService.image.tag=latest \
+                      --set global.env=prod \
+                      --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
                 '''
             }
         }
