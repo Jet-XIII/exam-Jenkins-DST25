@@ -1,0 +1,30 @@
+{{- if .Values.castService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fastapiapp.fullname" . }}-cast
+  labels:
+    app.kubernetes.io/name: {{ include "fastapiapp.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: cast-service
+spec:
+  replicas: {{ .Values.castService.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: cast-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: cast-service
+    spec:
+      containers:
+        - name: cast-service
+          image: "{{ .Values.castService.image.repository }}:{{ .Values.castService.image.tag }}"
+          env:
+            - name: DATABASE_URI
+              value: "{{ .Values.castService.databaseUri }}"
+          ports:
+            - containerPort: {{ .Values.castService.service.port | default 8000 }}
+{{- end }}
