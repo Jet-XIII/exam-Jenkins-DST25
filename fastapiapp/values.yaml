@@ -13,6 +13,9 @@ replicaCount: 3
 ingress:
   enabled: false
 
+global:
+  env: dev
+
 serviceAccount:
   create: true
   name: ""
@@ -23,7 +26,7 @@ castService:
     repository: jet13/cast-service
     tag: latest
   replicaCount: 3
-  databaseUri: "postgresql://castuser:castpass@fastapiapp-dev-postgresql:5432/castdb"
+  databaseUri: "postgresql://castuser:castpass@fastapiapp-{{ .Values.global.env }}-postgresql:5432/castdb"
   service:
     port: 8000
 
@@ -33,7 +36,7 @@ movieService:
     repository: jet13/movie-service
     tag: latest
   replicaCount: 3
-  databaseUri: "postgresql://castuser:castpass@fastapiapp-dev-postgresql:5432/castdb"
+  databaseUri: "postgresql://castuser:castpass@fastapiapp-{{ .Values.global.env }}-postgresql:5432/castdb"
   service:
     port: 8000
 
@@ -46,3 +49,6 @@ postgresql:
   primary:
     persistence:
       enabled: false  
+
+
+

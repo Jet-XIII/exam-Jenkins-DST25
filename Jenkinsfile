@@ -5,7 +5,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = 'dockerhub-creds-jet'
         DOCKERHUB_USER = 'jet13'
         REGISTRY = "docker.io"
-        KUBECONFIG = credentials('config') // Récupère le kubeconfig depuis les credentials Jenkins
+        KUBECONFIG = credentials('config')
     }
 
     stages {
@@ -59,7 +59,6 @@ pipeline {
             }
         }
 
-        // ✅ Déploiement de la base PostgreSQL
         stage('Helm Deploy to Dev') {
             when { branch 'dev' }
             steps {
@@ -70,6 +69,7 @@ pipeline {
                         --set cast.image.tag=latest \
                         --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
                         --set movie.image.tag=latest \
+                        --set global.env=dev \
                         --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
                 '''
             }
@@ -85,6 +85,7 @@ pipeline {
                         --set cast.image.tag=latest \
                         --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
                         --set movie.image.tag=latest \
+                        --set global.env=qa \
                         --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
                 '''
             }
@@ -100,6 +101,7 @@ pipeline {
                         --set cast.image.tag=latest \
                         --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
                         --set movie.image.tag=latest \
+                        --set global.env=staging \
                         --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
                 '''
             }
@@ -110,28 +112,16 @@ pipeline {
             steps {
                 input message: "Déployer en production ?", ok: "Oui, déployer"
                 sh '''
-                    export POSTGRES_PASSWORD=$(kubectl get secret --namespace prod fastapiapp-db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
-                    helm upgrade --install fastapiapp-prod ./fastapiapp --namespace prod \
+                    export POSTGRES_PASSWORD=$(kubectl get secret --namespace master fastapiapp-db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
+                    helm upgrade --install fastapiapp-master ./fastapiapp --namespace master \
                         --set cast.image.repository=docker.io/${DOCKERHUB_USER}/cast-service \
                         --set cast.image.tag=latest \
                         --set movie.image.repository=docker.io/${DOCKERHUB_USER}/movie-service \
                         --set movie.image.tag=latest \
+                        --set global.env=master \
                         --set global.postgresql.auth.postgresPassword=$POSTGRES_PASSWORD
                 '''
             }
         }
-
-        /*
-        stage('Healthcheck (Dev)') {
-            when { branch 'dev' }
-            steps {
-                sh '''
-                    sleep 10
-                    kubectl run curlpod --rm -i --restart=Never --image=curlimages/curl:latest -n dev -- \
-                    curl http://fastapiapp-cast.dev.svc.cluster.local:8000/health
-                '''
-            }
-        }
-        */
     }
 }
