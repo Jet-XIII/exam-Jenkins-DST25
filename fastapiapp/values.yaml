@@ -23,7 +23,7 @@ castService:
     repository: jet13/cast-service
     tag: latest
   replicaCount: 3
-  databaseUri: "postgresql://castuser:castpass@cast-db-postgresql/castdb"
+  databaseUri: "postgresql://castuser:castpass@fastapiapp-dev-postgresql:5432/castdb"
   service:
     port: 8000
 
@@ -33,7 +33,7 @@ movieService:
     repository: jet13/movie-service
     tag: latest
   replicaCount: 3
-  databaseUri: "postgresql://castuser:castpass@cast-db-postgresql/castdb"
+  databaseUri: "postgresql://castuser:castpass@fastapiapp-dev-postgresql:5432/castdb"
   service:
     port: 8000
 
