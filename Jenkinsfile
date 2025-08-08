@@ -60,17 +60,6 @@ pipeline {
         }
 
         // ✅ Déploiement de la base PostgreSQL
-        stage('Helm Deploy Database') {
-            when { branch 'dev' }
-            steps {
-                sh '''
-                    helm dependency update fastapiapp
-                    helm upgrade --install fastapiapp-db fastapiapp \
-                    --namespace dev --create-namespace
-                '''
-            }
-        }
-
         stage('Helm Deploy to Dev') {
             when { branch 'dev' }
             steps {
