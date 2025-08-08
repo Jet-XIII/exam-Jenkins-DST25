@@ -24,7 +24,8 @@ spec:
           image: "{{ .Values.movieService.image.repository }}:{{ .Values.movieService.image.tag }}"
           env:
             - name: DATABASE_URI
-              value: "{{ .Values.movieService.databaseUri | quote }}"
+              value: >-
+                postgresql://{{ .Values.global.postgresql.auth.username }}:{{ .Values.global.postgresql.auth.password }}@fastapiapp-{{ .Values.global.env }}-postgresql:5432/{{ .Values.global.postgresql.auth.database }}
           ports:
             - containerPort: {{ .Values.movieService.service.port | default 8000 }}
 {{- end }}
